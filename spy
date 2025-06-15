@@ -1,0 +1,53 @@
+import pandas as pd
+
+def export_backtest_report(metrics: dict, trades_df: pd.DataFrame,
+                          metrics_csv_path="backtest_metrics_report.csv",
+                          trades_csv_path="trade_log.csv",
+                          html_report_path="full_backtest_report.html"):
+    # Prepare metrics DataFrame
+    metrics_df = pd.DataFrame.from_dict(metrics, orient='index', columns=['Value'])
+    metrics_df.index.name = 'Metric'
+
+    # Format percentages & floats nicely
+    pct_metrics = ["Total Return", "CAGR", "Max Drawdown", "Win Rate"]
+    float_metrics = ["Sharpe Ratio", "Sortino Ratio", "Average Trade PnL"]
+
+    for m in pct_metrics:
+        if m in metrics_df.index:
+            metrics_df.loc[m, 'Value'] = f"{metrics_df.loc[m, 'Value']:.2%}"
+    for m in float_metrics:
+        if m in metrics_df.index:
+            metrics_df.loc[m, 'Value'] = f"{metrics_df.loc[m, 'Value']:.4f}"
+
+    # Export CSVs
+    metrics_df.to_csv(metrics_csv_path)
+    trades_df.to_csv(trades_csv_path, index=False)
+
+    # Build HTML tables
+    metrics_html = metrics_df.to_html(classes="table table-striped", border=0)
+    trades_html = trades_df.to_html(classes="table table-bordered", border=1, index=False)
+
+    # Combine into one HTML report with bootstrap styling
+    html_content = f"""
+    <html>
+    <head>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <title>Backtest Full Report</title>
+    </head>
+    <body>
+    <div class="container mt-5 mb-5">
+        <h1>Backtest Metrics Report</h1>
+        {metrics_html}
+        <h2>Trade Log</h2>
+        {trades_html}
+    </div>
+    </body>
+    </html>
+    """
+
+    with open(html_report_path, "w") as f:
+        f.write(html_content)
+
+    print(f"Metrics CSV saved to: {metrics_csv_path}")
+    print(f"Trade log CSV saved to: {trades_csv_path}")
+    print(f"Full HTML report saved to: {html_report_path}")
